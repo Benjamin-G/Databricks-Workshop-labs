@@ -70,7 +70,7 @@ display(spark.sql("SELECT * FROM json.`"+rawDataVolume+"/users`"))
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SELECT * FROM json.`/Volumes/main/odl_instructor_1306122_databrickslabs_com_retail/retail/users`
+# MAGIC SELECT * FROM json.`/Volumes/main/eric_edwards_databricks_com_retail/retail/users`
 # MAGIC
 
 # COMMAND ----------
@@ -95,7 +95,8 @@ print("User name: " + userName)
 
 # COMMAND ----------
 
-dbutils.fs.rm("/Users/odl_instructor_1306122_databrickslabs_com/retail/delta_tables/checkpoint/", True)
+## Use only need for clean up
+dbutils.fs.rm("/Users/" + userName + "/retail/delta_tables/checkpoint", True)
 
 
 # COMMAND ----------
