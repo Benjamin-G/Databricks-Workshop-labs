@@ -48,7 +48,7 @@
 
 # COMMAND ----------
 
-userRawDataVolume = rawDataVolume + '/orders'
+userRawDataVolume = rawDataVolume 
 print('User raw data under folder: ' + userRawDataVolume)
 
  #Listing the files under the directory
