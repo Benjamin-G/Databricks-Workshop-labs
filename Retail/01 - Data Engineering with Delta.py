@@ -48,7 +48,7 @@
 
 # COMMAND ----------
 
-userRawDataVolume = rawDataVolume + '/users'
+userRawDataVolume = rawDataVolume + '/orders'
 print('User raw data under folder: ' + userRawDataVolume)
 
  #Listing the files under the directory
@@ -66,11 +66,16 @@ display(dbutils.fs.ls(rawDataVolume+"/orders"))
 # COMMAND ----------
 
 display(spark.sql("SELECT * FROM json.`"+rawDataVolume+"/users`"))
+dbutils.widgets.text("rawDataVolumeLoc", str(rawDataVolume))
+
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SELECT * FROM json.`/Volumes/main/eric_edwards_databricks_com_retail/retail/users`
+# MAGIC SELECT *,:rawDataVolumeLoc AS volume_location FROM json.`${rawDataVolumeLoc}/users`
+# MAGIC
+# MAGIC
+# MAGIC
 # MAGIC
 
 # COMMAND ----------
