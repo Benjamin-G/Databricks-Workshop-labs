@@ -285,6 +285,7 @@ from sklearn.pipeline import Pipeline
 
 # Start a run
 with mlflow.start_run(run_name="simple-RF-run") as run:
+
   classifier = RandomForestClassifier()
   model = Pipeline([
       ("column_selector", col_selector),
@@ -319,7 +320,7 @@ with mlflow.start_run(run_name="simple-RF-run") as run:
 # MAGIC %md
 # MAGIC #### Explore the above in the UI
 # MAGIC
-# MAGIC From the experiments page select the "02 - Machine Learning with MLflow" experiment and see the associated runs
+# MAGIC From the experiments page on the left pane and select the "simple-RF-run" experiment as noted above
 
 # COMMAND ----------
 
@@ -412,15 +413,6 @@ client.set_registered_model_alias('main.'+databaseForDLT+'.'+modelName, "product
 # MAGIC Click on Start, and Databricks will do the rest.
 # MAGIC
 # MAGIC While this is done using the UI, you can also leverage the [python API](https://docs.databricks.com/applications/machine-learning/automl.html#automl-python-api-1)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Lab exercise - AutoML
-# MAGIC
-# MAGIC Let's create a better model with just a few clicks!
-# MAGIC * Create an AutoML experiment
-# MAGIC
 
 # COMMAND ----------
 

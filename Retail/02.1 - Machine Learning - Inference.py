@@ -31,9 +31,9 @@
 # MAGIC   <img width="500px" src="https://github.com/QuentinAmbard/databricks-demo/raw/main/retail/resources/images/lakehouse-retail/lakehouse-retail-churn-de-small-4.png"/>
 # MAGIC </div>
 # MAGIC
-# MAGIC Our Data scientist team has build a churn prediction model using Auto ML and saved it into Databricks Model registry. 
+# MAGIC Our Data scientist team has built a churn prediction model using Auto ML and saved it into Databricks Model registry. 
 # MAGIC
-# MAGIC One of the key value of the Lakehouse is that we can easily load this model and predict our churn right into our pipeline. 
+# MAGIC A key value of the Lakehouse is that we can easily load this model and predict our churn right into our pipeline. 
 # MAGIC
 # MAGIC Note that we don't have to worry about the model framework (sklearn or other), MLflow abstracts all that for us.
 

@@ -63,6 +63,14 @@ print('Website event raw data stored under the DBFS folder "' + eventsFolder + '
 
 # COMMAND ----------
 
+# MAGIC %fs rm -r /Volumes/main/eric_edwards_databricks_com_retail/retail/
+
+# COMMAND ----------
+
+# MAGIC %fs ls /Volumes/main/eric_edwards_databricks_com_retail/retail/
+
+# COMMAND ----------
+
 # MAGIC %md-sandbox
 # MAGIC ## What we are going to implement
 # MAGIC

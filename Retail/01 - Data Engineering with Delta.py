@@ -48,15 +48,17 @@
 
 # COMMAND ----------
 
-userRawDataVolume = rawDataVolume 
+userRawDataVolume = rawDataVolume + '/users'
 print('User raw data under folder: ' + userRawDataVolume)
 
  #Listing the files under the directory
 for fileInfo in dbutils.fs.ls(userRawDataVolume): print(fileInfo.name)
 
+
+
 # COMMAND ----------
 
-display(dbutils.fs.ls(rawDataVolume+"/orders"))
+display(dbutils.fs.ls(rawDataVolume+"/users"))
 
 # COMMAND ----------
 
@@ -72,9 +74,8 @@ dbutils.widgets.text("rawDataVolumeLoc", str(rawDataVolume))
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SELECT *,:rawDataVolumeLoc AS volume_location FROM json.`${rawDataVolumeLoc}/users`
 # MAGIC
-# MAGIC
+# MAGIC SELECT *,':rawDataVolumeLoc' AS volume_location FROM json.`${rawDataVolumeLoc}/users`
 # MAGIC
 # MAGIC
 
