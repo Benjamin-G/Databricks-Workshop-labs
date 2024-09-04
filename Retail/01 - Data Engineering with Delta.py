@@ -54,9 +54,7 @@ print('User raw data under folder: ' + userRawDataVolume)
  #Listing the files under the directory
 for fileInfo in dbutils.fs.ls(userRawDataVolume): print(fileInfo.name)
 
-# COMMAND ----------
 
-display(dbutils.fs.ls(rawDataVolume+"/orders"))
 
 # COMMAND ----------
 
@@ -66,11 +64,15 @@ display(dbutils.fs.ls(rawDataVolume+"/orders"))
 # COMMAND ----------
 
 display(spark.sql("SELECT * FROM json.`"+rawDataVolume+"/users`"))
+dbutils.widgets.text("rawDataVolumeLoc", str(rawDataVolume))
+
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SELECT * FROM json.`/Volumes/main/odl_instructor_1306122_databrickslabs_com_retail/retail/users`
+# MAGIC
+# MAGIC SELECT *,':rawDataVolumeLoc' AS volume_location FROM json.`${rawDataVolumeLoc}/users`
+# MAGIC
 # MAGIC
 
 # COMMAND ----------
@@ -92,11 +94,6 @@ spark.sql("use catalog main")
 spark.sql("use database "+databaseName)
 print("Database name: " + databaseName)
 print("User name: " + userName)
-
-# COMMAND ----------
-
-dbutils.fs.rm("/Users/odl_instructor_1306122_databrickslabs_com/retail/delta_tables/checkpoint/", True)
-
 
 # COMMAND ----------
 
