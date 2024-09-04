@@ -44,8 +44,8 @@
 # MAGIC
 # MAGIC For this demonstration we will not be using real data or an existing dataset, but will rather generate them.
 # MAGIC
-# MAGIC The cell below will execute a notebook that will generate the data and store them on DBFS.
-# MAGIC If you want to see the actual code [click here to open it on a different tab]($./includes/CreateRawData)
+# MAGIC The cell below will execute a notebook that will generate the data and store it in a S3 bucket and accessed by a Unity Catalog Volume.
+# MAGIC
 
 # COMMAND ----------
 
@@ -53,21 +53,13 @@
 
 # COMMAND ----------
 
-# DBTITLE 1,The raw data on DBFS
+# DBTITLE 1,The raw data on the volume
 ordersFolder = rawDataVolume + '/orders'
 usersFolder = rawDataVolume + '/users'
 eventsFolder = rawDataVolume + '/events'
-print('Order raw data stored under the DBFS folder "' + ordersFolder + '"')
-print('User raw data stored under the DBFS folder "' + usersFolder + '"')
-print('Website event raw data stored under the DBFS folder "' + eventsFolder + '"')
-
-# COMMAND ----------
-
-# MAGIC %fs rm -r /Volumes/main/eric_edwards_databricks_com_retail/retail/
-
-# COMMAND ----------
-
-# MAGIC %fs ls /Volumes/main/eric_edwards_databricks_com_retail/retail/
+print('Order raw data stored under the folder "' + ordersFolder + '"')
+print('User raw data stored under the folder "' + usersFolder + '"')
+print('Website event raw data stored under the folder "' + eventsFolder + '"')
 
 # COMMAND ----------
 

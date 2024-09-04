@@ -58,10 +58,6 @@ for fileInfo in dbutils.fs.ls(userRawDataVolume): print(fileInfo.name)
 
 # COMMAND ----------
 
-display(dbutils.fs.ls(rawDataVolume+"/users"))
-
-# COMMAND ----------
-
 # MAGIC %md-sandbox
 # MAGIC ### Review the raw data received as JSON
 
@@ -98,12 +94,6 @@ spark.sql("use catalog main")
 spark.sql("use database "+databaseName)
 print("Database name: " + databaseName)
 print("User name: " + userName)
-
-# COMMAND ----------
-
-## Use only need for clean up
-dbutils.fs.rm("/Users/" + userName + "/retail/delta_tables/checkpoint", True)
-
 
 # COMMAND ----------
 
