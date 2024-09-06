@@ -69,14 +69,6 @@ dbutils.widgets.text("rawDataVolumeLoc", str(rawDataVolume))
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC
-# MAGIC SELECT *,':rawDataVolumeLoc' AS volume_location FROM json.`${rawDataVolumeLoc}/users`
-# MAGIC
-# MAGIC
-
-# COMMAND ----------
-
 # MAGIC %md-sandbox
 # MAGIC ### 1/ Loading our data using Databricks Autoloader (cloud_files)
 # MAGIC <div style="float:right">
