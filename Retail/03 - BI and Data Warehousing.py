@@ -80,12 +80,12 @@
 # MAGIC ```
 # MAGIC SELECT
 # MAGIC   sum(amount)/1000 as MRR
-# MAGIC FROM main.eric_edwards_databricks_com_retail_dlt.churn_orders
+# MAGIC FROM churn_orders
 # MAGIC WHERE
 # MAGIC     month(to_timestamp(creation_date, 'MM-dd-yyyy HH:mm:ss')) = 
 # MAGIC   (
 # MAGIC     select max(month(to_timestamp(creation_date, 'MM-dd-yyyy HH:mm:ss')))
-# MAGIC       from main.eric_edwards_databricks_com_retail_dlt.churn_orders
+# MAGIC       from churn_orders
 # MAGIC   );
 # MAGIC
 # MAGIC ```
@@ -94,14 +94,14 @@
 # MAGIC **2. Customer Tenure - Historical**
 # MAGIC ```
 # MAGIC SELECT cast(days_since_creation/30 as int) as days_since_creation, churn, count(*) as customers
-# MAGIC FROM main.eric_edwards_databricks_com_retail_dlt.churn_features
+# MAGIC FROM churn_features
 # MAGIC GROUP BY days_since_creation, churn
 # MAGIC HAVING days_since_creation < 1000
 # MAGIC ```
 # MAGIC **3. Subscriptions by Internet Service - Historical**
 # MAGIC ```
 # MAGIC select platform, churn, count(*) as event_count
-# MAGIC from main.eric_edwards_databricks_com_retail_dlt.churn_app_events
+# MAGIC from churn_app_events
 # MAGIC inner join churn_users using (user_id)
 # MAGIC where platform is not null
 # MAGIC group by platform, churn
@@ -113,15 +113,15 @@
 # MAGIC ```
 # MAGIC SELECT
 # MAGIC 	sum(amount)/1000 as MRR_at_risk
-# MAGIC FROM main.eric_edwards_databricks_com_retail_dlt.churn_orders
+# MAGIC FROM churn_orders
 # MAGIC WHERE month(to_timestamp(churn_orders.creation_date, 'MM-dd-yyyy HH:mm:ss')) = 
 # MAGIC 	(
 # MAGIC 		select max(month(to_timestamp(churn_orders.creation_date, 'MM-dd-yyyy HH:mm:ss')))
-# MAGIC 		from main.eric_edwards_databricks_com_retail_dlt.churn_orders
+# MAGIC 		from churn_orders
 # MAGIC 	)
 # MAGIC 	and user_id in
 # MAGIC 	(
-# MAGIC 		SELECT user_id FROM main.eric_edwards_databricks_com_retail_dlt.churn_prediction WHERE churn_prediction=1
+# MAGIC 		SELECT user_id FROM churn_prediction WHERE churn_prediction=1
 # MAGIC 	)
 # MAGIC
 # MAGIC ```
@@ -133,13 +133,13 @@
 # MAGIC **5. Customers at risk**
 # MAGIC ```
 # MAGIC SELECT count(*) as Customers, cast(churn_prediction as boolean) as `At Risk`
-# MAGIC FROM main.eric_edwards_databricks_com_retail_dlt.churn_prediction GROUP BY churn_prediction;
+# MAGIC FROM churn_prediction GROUP BY churn_prediction;
 # MAGIC
 # MAGIC ```
 # MAGIC **6. Predicted to churn by channel**
 # MAGIC ```
 # MAGIC SELECT channel, count(*) as users
-# MAGIC FROM main.eric_edwards_databricks_com_retail_dlt.churn_prediction
+# MAGIC FROM churn_prediction
 # MAGIC WHERE churn_prediction=1 and channel is not null
 # MAGIC GROUP BY channel
 # MAGIC ```
@@ -148,7 +148,7 @@
 # MAGIC **7. Predicted to churn by country**
 # MAGIC ```
 # MAGIC SELECT country, churn_prediction, count(*) as customers
-# MAGIC FROM main.eric_edwards_databricks_com_retail_dlt.churn_prediction
+# MAGIC FROM churn_prediction
 # MAGIC GROUP BY country, churn_prediction
 # MAGIC ```
 # MAGIC Create a *bar* visualisation
