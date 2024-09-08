@@ -48,7 +48,7 @@
 
 # COMMAND ----------
 
-userRawDataVolume = rawDataVolume + '/users'
+userRawDataVolume = rawDataVolume + '/events'
 print('User raw data under folder: ' + userRawDataVolume)
 
  #Listing the files under the directory
@@ -64,7 +64,23 @@ for fileInfo in dbutils.fs.ls(userRawDataVolume): print(fileInfo.name)
 # COMMAND ----------
 
 display(spark.sql("SELECT * FROM json.`"+rawDataVolume+"/users`"))
-dbutils.widgets.text("rawDataVolumeLoc", str(rawDataVolume))
+
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC ### Review the raw data received as CSV
+
+# COMMAND ----------
+
+# Read the CSV file into a DataFrame
+df = spark.read.option("header", "true").csv(rawDataVolume + "/events")
+
+# Create a temporary view so you can use SQL to query the data
+df.createOrReplaceTempView("eventsView")
+
+# Now you can display the data using SQL
+display(spark.sql("SELECT * FROM eventsView"))
 
 
 # COMMAND ----------
@@ -229,6 +245,10 @@ spark.sql(
 )
 
 display(spark.table("churn_features"))
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 

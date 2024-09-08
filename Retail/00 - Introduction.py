@@ -44,7 +44,7 @@
 # MAGIC
 # MAGIC For this demonstration we will not be using real data or an existing dataset, but will rather generate them.
 # MAGIC
-# MAGIC The cell below will execute a notebook that will generate the data and store it in a S3 bucket and accessed by a Unity Catalog Volume.
+# MAGIC The cell below will execute a notebook that will generate the data and store it in a S3 bucket and governed by a unity catalog volume.
 # MAGIC
 
 # COMMAND ----------
