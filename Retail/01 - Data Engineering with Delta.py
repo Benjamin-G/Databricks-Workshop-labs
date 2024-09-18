@@ -248,10 +248,6 @@ display(spark.table("churn_features"))
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC ## Exploiting the benefits of Delta
 # MAGIC
