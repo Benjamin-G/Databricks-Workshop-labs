@@ -48,13 +48,12 @@
 
 # COMMAND ----------
 
-userRawDataVolume = rawDataVolume + '/events'
-print('User raw data under folder: ' + userRawDataVolume)
-
- #Listing the files under the directory
-for fileInfo in dbutils.fs.ls(userRawDataVolume): print(fileInfo.name)
-
-
+userRawDataVolume = rawDataVolume + "/events"
+print("User raw data under folder: " + userRawDataVolume)
+# /Volumes/main/odl_user_1503017_databrickslabs_com_retail/retail/events/
+# Listing the files under the directory
+for fileInfo in dbutils.fs.ls(userRawDataVolume):
+    print(fileInfo.name)
 
 # COMMAND ----------
 
@@ -63,8 +62,7 @@ for fileInfo in dbutils.fs.ls(userRawDataVolume): print(fileInfo.name)
 
 # COMMAND ----------
 
-display(spark.sql("SELECT * FROM json.`"+rawDataVolume+"/users`"))
-
+display(spark.sql("SELECT * FROM json.`" + rawDataVolume + "/users`"))
 
 # COMMAND ----------
 
@@ -82,7 +80,6 @@ df.createOrReplaceTempView("eventsView")
 # Now you can display the data using SQL
 display(spark.sql("SELECT * FROM eventsView"))
 
-
 # COMMAND ----------
 
 # MAGIC %md-sandbox
@@ -99,7 +96,7 @@ display(spark.sql("SELECT * FROM eventsView"))
 # COMMAND ----------
 
 spark.sql("use catalog main")
-spark.sql("use database "+databaseName)
+spark.sql("use database " + databaseName)
 print("Database name: " + databaseName)
 print("User name: " + userName)
 
@@ -107,30 +104,38 @@ print("User name: " + userName)
 
 # DBTITLE 1,Storing the raw data in "bronze" Delta tables, supporting schema evolution and incorrect data
 def ingest_folder(folder, data_format, table):
-  bronze_products = (spark.readStream
-                      .format("cloudFiles")
-                      .option("cloudFiles.format", data_format)
-                      .option("cloudFiles.inferColumnTypes", "true")
-                      .option("cloudFiles.schemaLocation",
-                              f"{deltaTablesDirectory}/schema/{table}") #Autoloader will automatically infer all the schema & evolution
-                      .load(folder))
-  return (bronze_products.writeStream
-            .option("checkpointLocation",
-                    f"{deltaTablesDirectory}/checkpoint/{table}") #exactly once delivery on Delta tables over restart/kill
-            .option("mergeSchema", "true") #merge any new column dynamically
-            .trigger(once = True) #Remove for real time streaming
-            .table(table)) #Table will be created if we haven't specified the schema first
-  
-ingest_folder(rawDataVolume + '/orders', 'json', 'churn_orders_bronze')
-ingest_folder(rawDataVolume + '/events', 'csv', 'churn_app_events')
-ingest_folder(rawDataVolume + '/users', 'json',  'churn_users_bronze').awaitTermination()
+    bronze_products = (
+        spark.readStream.format("cloudFiles")
+        .option("cloudFiles.format", data_format)
+        .option("cloudFiles.inferColumnTypes", "true")
+        .option(
+            "cloudFiles.schemaLocation", f"{deltaTablesDirectory}/schema/{table}"
+        )  # Autoloader will automatically infer all the schema & evolution
+        .load(folder)
+    )
+    return (
+        bronze_products.writeStream.option(
+            "checkpointLocation", f"{deltaTablesDirectory}/checkpoint/{table}"
+        )  # exactly once delivery on Delta tables over restart/kill
+        .option("mergeSchema", "true")  # merge any new column dynamically
+        .trigger(once=True)  # Remove for real time streaming
+        .table(table)
+    )  # Table will be created if we haven't specified the schema first
+
+
+ingest_folder(rawDataVolume + "/orders", "json", "churn_orders_bronze")
+ingest_folder(rawDataVolume + "/events", "csv", "churn_app_events")
+ingest_folder(rawDataVolume + "/users", "json", "churn_users_bronze").awaitTermination()
 
 # COMMAND ----------
 
 # DBTITLE 1,Our user_bronze Delta table is now ready for efficient querying
-# MAGIC %sql 
+# MAGIC %sql
 # MAGIC -- Note the "_rescued_data" column. If we receive wrong data not matching existing schema, it will be stored here
-# MAGIC select * from churn_users_bronze;
+# MAGIC select
+# MAGIC   *
+# MAGIC from
+# MAGIC   churn_users_bronze;
 
 # COMMAND ----------
 
@@ -149,45 +154,66 @@ ingest_folder(rawDataVolume + '/users', 'json',  'churn_users_bronze').awaitTerm
 # DBTITLE 1,Silver table for the users data
 from pyspark.sql.functions import sha1, col, initcap, to_timestamp
 
-(spark.readStream
-        .table("churn_users_bronze")
-        .withColumnRenamed("id", "user_id")
-        .withColumn("email", sha1(col("email")))
-        .withColumn("creation_date", to_timestamp(col("creation_date"), "MM-dd-yyyy H:mm:ss"))
-        .withColumn("last_activity_date", to_timestamp(col("last_activity_date"), "MM-dd-yyyy HH:mm:ss"))
-        .withColumn("firstname", initcap(col("firstname")))
-        .withColumn("lastname", initcap(col("lastname")))
-        .withColumn("age_group", col("age_group").cast('int'))
-        .withColumn("gender", col("gender").cast('int'))
-        .drop(col("churn"))
-        .drop(col("_rescued_data"))
-      .writeStream
-        .option("checkpointLocation", f"{deltaTablesDirectory}/checkpoint/users")
-        .trigger(once=True)
-        .table("churn_users").awaitTermination())
+(
+    spark.readStream.table("churn_users_bronze")
+    .withColumnRenamed("id", "user_id")
+    .withColumn("email", sha1(col("email")))
+    .withColumn(
+        "creation_date", to_timestamp(col("creation_date"), "MM-dd-yyyy H:mm:ss")
+    )
+    .withColumn(
+        "last_activity_date",
+        to_timestamp(col("last_activity_date"), "MM-dd-yyyy HH:mm:ss"),
+    )
+    .withColumn("firstname", initcap(col("firstname")))
+    .withColumn("lastname", initcap(col("lastname")))
+    .withColumn("age_group", col("age_group").cast("int"))
+    .withColumn("gender", col("gender").cast("int"))
+    .drop(col("churn"))
+    .drop(col("_rescued_data"))
+    .writeStream.option(
+        "checkpointLocation", f"{deltaTablesDirectory}/checkpoint/users"
+    )
+    .trigger(once=True)
+    .table("churn_users")
+    .awaitTermination()
+)
 
 # COMMAND ----------
 
-# MAGIC %sql select * from churn_users;
+# MAGIC %sql
+# MAGIC select
+# MAGIC   *
+# MAGIC from
+# MAGIC   churn_users;
 
 # COMMAND ----------
 
 # DBTITLE 1,Silver table for the orders data
-(spark.readStream 
-        .table("churn_orders_bronze")
-        .withColumnRenamed("id", "order_id")
-        .withColumn("amount", col("amount").cast('int'))
-        .withColumn("item_count", col("item_count").cast('int'))
-        .withColumn("creation_date", to_timestamp(col("transaction_date"), "MM-dd-yyyy H:mm:ss"))
-        .drop(col("_rescued_data"))
-      .writeStream
-        .option("checkpointLocation", f"{deltaTablesDirectory}/checkpoint/orders")
-        .trigger(once=True)
-        .table("churn_orders").awaitTermination())
+(
+    spark.readStream.table("churn_orders_bronze")
+    .withColumnRenamed("id", "order_id")
+    .withColumn("amount", col("amount").cast("int"))
+    .withColumn("item_count", col("item_count").cast("int"))
+    .withColumn(
+        "creation_date", to_timestamp(col("transaction_date"), "MM-dd-yyyy H:mm:ss")
+    )
+    .drop(col("_rescued_data"))
+    .writeStream.option(
+        "checkpointLocation", f"{deltaTablesDirectory}/checkpoint/orders"
+    )
+    .trigger(once=True)
+    .table("churn_orders")
+    .awaitTermination()
+)
 
 # COMMAND ----------
 
-# MAGIC %sql select * from churn_orders;
+# MAGIC %sql
+# MAGIC select
+# MAGIC   *
+# MAGIC from
+# MAGIC   churn_orders;
 
 # COMMAND ----------
 
@@ -211,7 +237,7 @@ from pyspark.sql.functions import sha1, col, initcap, to_timestamp
 
 # DBTITLE 1,Creating a "gold table" to be used by the Machine Learning practitioner
 spark.sql(
-  """
+    """
     CREATE OR REPLACE TABLE churn_features AS
       WITH
         churn_orders_stats AS (
@@ -258,30 +284,34 @@ display(spark.table("churn_features"))
 # COMMAND ----------
 
 # DBTITLE 1,We just realised we have to delete users created before 2016-01-01 for compliance; let's fix that
-# MAGIC %sql DELETE FROM churn_users where creation_date < '2016-01-01T03:38:55.000+0000';
+# MAGIC %sql
+# MAGIC DELETE FROM
+# MAGIC   churn_users
+# MAGIC where
+# MAGIC   creation_date < '2016-01-01T03:38:55.000+0000';
 
 # COMMAND ----------
 
 # DBTITLE 1,Delta Lake keeps the history of the table operations
-# MAGIC %sql describe history churn_users;
+# MAGIC %sql
+# MAGIC describe history churn_users;
 
 # COMMAND ----------
 
 # DBTITLE 1,We can leverage the history to travel back in time, restore or clone a table, enable CDC, etc.
-# MAGIC %sql 
-# MAGIC  -- the following also works with AS OF TIMESTAMP "yyyy-MM-dd HH:mm:ss"
-# MAGIC select * from churn_users version as of 1 ;
+# MAGIC %sql
+# MAGIC -- the following also works with AS OF TIMESTAMP "yyyy-MM-dd HH:mm:ss"
+# MAGIC select
+# MAGIC   *
+# MAGIC from
+# MAGIC   churn_users version as of 1;
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC -- You made the DELETE by mistake ? You can easily restore the table at a given version / date:
-# MAGIC RESTORE TABLE churn_users TO VERSION AS OF 1
-# MAGIC
-# MAGIC -- Or clone it (SHALLOW provides zero copy clone):
+# MAGIC RESTORE TABLE churn_users TO VERSION AS OF 1 -- Or clone it (SHALLOW provides zero copy clone):
 # MAGIC -- CREATE TABLE user_gold_clone SHALLOW|DEEP CLONE user_gold VERSION AS OF 1
-# MAGIC
-# MAGIC
 
 # COMMAND ----------
 
@@ -292,12 +322,32 @@ display(spark.table("churn_features"))
 
 # DBTITLE 1,Ensuring that all our tables are storage-optimized
 # MAGIC %sql
-# MAGIC ALTER TABLE churn_users    SET TBLPROPERTIES (delta.autooptimize.optimizewrite = TRUE, delta.autooptimize.autocompact = TRUE );
-# MAGIC ALTER TABLE churn_orders   SET TBLPROPERTIES (delta.autooptimize.optimizewrite = TRUE, delta.autooptimize.autocompact = TRUE );
-# MAGIC ALTER TABLE churn_features SET TBLPROPERTIES (delta.autooptimize.optimizewrite = TRUE, delta.autooptimize.autocompact = TRUE );
+# MAGIC ALTER TABLE
+# MAGIC   churn_users
+# MAGIC SET
+# MAGIC   TBLPROPERTIES (
+# MAGIC     delta.autooptimize.optimizewrite = TRUE,
+# MAGIC     delta.autooptimize.autocompact = TRUE
+# MAGIC   );
+# MAGIC ALTER TABLE
+# MAGIC   churn_orders
+# MAGIC SET
+# MAGIC   TBLPROPERTIES (
+# MAGIC     delta.autooptimize.optimizewrite = TRUE,
+# MAGIC     delta.autooptimize.autocompact = TRUE
+# MAGIC   );
+# MAGIC ALTER TABLE
+# MAGIC   churn_features
+# MAGIC SET
+# MAGIC   TBLPROPERTIES (
+# MAGIC     delta.autooptimize.optimizewrite = TRUE,
+# MAGIC     delta.autooptimize.autocompact = TRUE
+# MAGIC   );
 
 # COMMAND ----------
 
 # DBTITLE 1,Our user table will be queried mostly by 3 fields; let's optimize the table for that!
 # MAGIC %sql
-# MAGIC OPTIMIZE churn_users ZORDER BY user_id, firstname, lastname
+# MAGIC OPTIMIZE churn_users ZORDER BY user_id,
+# MAGIC firstname,
+# MAGIC lastname
