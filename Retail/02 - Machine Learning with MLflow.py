@@ -79,11 +79,6 @@
 
 # COMMAND ----------
 
-# %sql
-# drop table
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC ### Our training Data
 # MAGIC The tables generated with the DLT pipeline contain a **churn** flag which will be used as the label for training of the model.
@@ -127,7 +122,7 @@ import seaborn as sns
 # Really Really COOL!
 
 g = sns.PairGrid(
-    churn_dataset.sample(0.01).toPandas()[["age_group", "gender", "order_count"]],
+    churn_dataset.sample(0.02).toPandas()[["age_group", "gender", "order_count"]],
     diag_sharey=False,
 )
 g.map_lower(sns.kdeplot)
@@ -149,6 +144,8 @@ g.map_upper(sns.regplot)
 # Convert to pandas on spark
 dataset = churn_dataset.pandas_api()
 dataset.describe()
+
+
 # Drop columns we don't want to use in our model
 dataset = dataset.drop(
     columns=[
@@ -256,6 +253,9 @@ supported_cols = [
     "platform",
 ]
 col_selector = ColumnSelector(supported_cols)
+
+print(col_selector)
+print(df.columns)
 
 # COMMAND ----------
 

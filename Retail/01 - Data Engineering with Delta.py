@@ -151,11 +151,16 @@ ingest_folder(rawDataVolume + "/users", "json", "churn_users_bronze").awaitTermi
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC -- drop table churn_users
+
+# COMMAND ----------
+
 # DBTITLE 1,Silver table for the users data
 from pyspark.sql.functions import sha1, col, initcap, to_timestamp
 
 (
-    spark.readStream.table("churn_users_bronze")
+    spark.read.table("churn_users_bronze")
     .withColumnRenamed("id", "user_id")
     # Obfiscation 
     .withColumn("email", sha1(col("email"))) 
@@ -170,7 +175,8 @@ from pyspark.sql.functions import sha1, col, initcap, to_timestamp
     .withColumn("lastname", initcap(col("lastname")))
     .withColumn("age_group", col("age_group").cast("int"))
     .withColumn("gender", col("gender").cast("int"))
-    .drop(col("churn"))
+    .withColumn("churn", col("churn").cast("int"))
+    # .drop(col("churn"))
     .drop(col("_rescued_data"))
     .writeStream.option(
         "checkpointLocation", f"{deltaTablesDirectory}/checkpoint/users"
@@ -179,6 +185,29 @@ from pyspark.sql.functions import sha1, col, initcap, to_timestamp
     .table("churn_users")
     .awaitTermination()
 )
+
+# COMMAND ----------
+
+from pyspark.sql.functions import sha1, col, to_timestamp, initcap
+
+(spark.read.table("churn_users_bronze")
+.withColumnRenamed("id", "user_id")
+# Obfuscation 
+.withColumn("email", sha1(col("email"))) 
+.withColumn(
+    "creation_date", to_timestamp(col("creation_date"), "MM-dd-yyyy H:mm:ss")
+)
+.withColumn(
+    "last_activity_date",
+    to_timestamp(col("last_activity_date"), "MM-dd-yyyy HH:mm:ss"),
+)
+.withColumn("firstname", initcap(col("firstname")))
+.withColumn("lastname", initcap(col("lastname")))
+.withColumn("age_group", col("age_group").cast("int"))
+.withColumn("gender", col("gender").cast("int"))
+.withColumn("churn", col("churn").cast("int"))
+.drop("_rescued_data")
+.write.mode("overwrite").saveAsTable("churn_users"))
 
 # COMMAND ----------
 

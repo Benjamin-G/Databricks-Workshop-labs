@@ -126,6 +126,7 @@ CREATE STREAMING LIVE TABLE churn_orders_bronze (
   CONSTRAINT orders_correct_schema EXPECT (_rescued_data IS NULL)
 )
 COMMENT "Spending score from raw data"
+-- This is set as a configuration 
 AS SELECT * FROM cloud_files("${rawDataVolumeLoc}/orders", "json", map("cloudFiles.inferColumnTypes", "true"))
 
 -- COMMAND ----------
@@ -213,19 +214,36 @@ from STREAM(live.churn_orders_bronze)
 
 -- DBTITLE 1,Create the feature table
 CREATE LIVE TABLE churn_features
-COMMENT "Final user table with all information for Analysis / ML"
-AS 
-  WITH 
-    churn_orders_stats AS (SELECT user_id, count(*) as order_count, sum(amount) as total_amount, sum(item_count) as total_item, max(creation_date) as last_transaction
-      FROM live.churn_orders GROUP BY user_id),  
-    churn_app_events_stats as (
-      SELECT first(platform) as platform, user_id, count(*) as event_count, count(distinct session_id) as session_count, max(to_timestamp(date, "MM-dd-yyyy HH:mm:ss")) as last_event
-        FROM live.churn_app_events GROUP BY user_id)
-
-  SELECT *, 
-         datediff(now(), creation_date) as days_since_creation,
-         datediff(now(), last_activity_date) as days_since_last_activity,
-         datediff(now(), last_event) as days_last_event
-       FROM live.churn_users
-         INNER JOIN churn_orders_stats using (user_id)
-         INNER JOIN churn_app_events_stats using (user_id)
+COMMENT "Final user table with all information for Analysis / ML" AS WITH churn_orders_stats AS (
+  SELECT
+    user_id,
+    count(*) as order_count,
+    sum(amount) as total_amount,
+    sum(item_count) as total_item,
+    max(creation_date) as last_transaction
+  FROM
+    live.churn_orders
+  GROUP BY
+    user_id
+),
+churn_app_events_stats as (
+  SELECT
+    first(platform) as platform,
+    user_id,
+    count(*) as event_count,
+    count(distinct session_id) as session_count,
+    max(to_timestamp(date, "MM-dd-yyyy HH:mm:ss")) as last_event
+  FROM
+    live.churn_app_events
+  GROUP BY
+    user_id
+)
+SELECT
+  *,
+  datediff(now(), creation_date) as days_since_creation,
+  datediff(now(), last_activity_date) as days_since_last_activity,
+  datediff(now(), last_event) as days_last_event
+FROM
+  live.churn_users
+  INNER JOIN churn_orders_stats using (user_id)
+  INNER JOIN churn_app_events_stats using (user_id)
