@@ -57,6 +57,7 @@
 ordersFolder = rawDataVolume + '/orders'
 usersFolder = rawDataVolume + '/users'
 eventsFolder = rawDataVolume + '/events'
+
 print('Order raw data stored under the folder "' + ordersFolder + '"')
 print('User raw data stored under the folder "' + usersFolder + '"')
 print('Website event raw data stored under the folder "' + eventsFolder + '"')
