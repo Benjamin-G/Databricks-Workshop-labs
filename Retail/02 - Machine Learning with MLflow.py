@@ -79,6 +79,11 @@
 
 # COMMAND ----------
 
+# %sql
+# drop table
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Our training Data
 # MAGIC The tables generated with the DLT pipeline contain a **churn** flag which will be used as the label for training of the model.
@@ -87,13 +92,18 @@
 # COMMAND ----------
 
 spark.sql("use catalog main")
-spark.sql("use database "+databaseForDLT)
-
+# spark.sql("use database odl_user_1503017_databrickslabs_com_retail")
+databaseForDLT = "odl_user_1503017_databrickslabs_com_retail"
+spark.sql("use database " + databaseForDLT)
 
 # COMMAND ----------
 
 ## Use the tables within the DlT schema to creat our model.
-print("We will be working with our DLT Schema to build our final predication table:\n" + databaseForDLT + "\n")
+print(
+    "We will be working with our DLT Schema to build our final predication table:\n"
+    + databaseForDLT
+    + "\n"
+)
 
 # COMMAND ----------
 
@@ -113,7 +123,13 @@ display(churn_dataset)
 
 # DBTITLE 1,Data Exploration and analysis
 import seaborn as sns
-g = sns.PairGrid(churn_dataset.sample(0.01).toPandas()[['age_group','gender','order_count']], diag_sharey=False)
+
+# Really Really COOL!
+
+g = sns.PairGrid(
+    churn_dataset.sample(0.01).toPandas()[["age_group", "gender", "order_count"]],
+    diag_sharey=False,
+)
 g.map_lower(sns.kdeplot)
 g.map_diag(sns.kdeplot, lw=3)
 g.map_upper(sns.regplot)
@@ -132,9 +148,19 @@ g.map_upper(sns.regplot)
 # DBTITLE 1,Custom pandas transformation / code on top of your entire dataset
 # Convert to pandas on spark
 dataset = churn_dataset.pandas_api()
-dataset.describe()  
+dataset.describe()
 # Drop columns we don't want to use in our model
-dataset = dataset.drop(columns=['address', 'email', 'firstname', 'lastname', 'creation_date', 'last_activity_date', 'last_event'])
+dataset = dataset.drop(
+    columns=[
+        "address",
+        "email",
+        "firstname",
+        "lastname",
+        "creation_date",
+        "last_activity_date",
+        "last_event",
+    ]
+)
 # Drop missing values
 dataset = dataset.dropna()
 # print the ten first rows
@@ -163,20 +189,21 @@ from databricks.feature_store import FeatureStoreClient
 fs = FeatureStoreClient()
 
 try:
-  #drop table if exists
-  fs.drop_table('churn_user_features')
-except: pass
+    # drop table if exists
+    fs.drop_table("churn_user_features")
+except:
+    pass
 
-#Note: You might need to delete the FS table using the UI
+# Note: You might need to delete the FS table using the UI
 churn_feature_table = fs.create_table(
-  name='churn_user_features',
-  primary_keys='user_id',
-  schema=dataset.spark.schema(),
-  description='These features are derived from the churn_bronze_customers table in the lakehouse.  We created dummy variables for the categorical columns, cleaned up their names, and added a boolean flag for whether the customer churned or not.  No aggregations were performed.'
+    name="churn_user_features",
+    primary_keys="user_id",
+    schema=dataset.spark.schema(),
+    description="These features are derived from the churn_bronze_customers table in the lakehouse.  We created dummy variables for the categorical columns, cleaned up their names, and added a boolean flag for whether the customer churned or not.  No aggregations were performed.",
 )
 
-fs.write_table(df=dataset.to_spark(), name='churn_user_features', mode='overwrite')
-features = fs.read_table('churn_user_features')
+fs.write_table(df=dataset.to_spark(), name="churn_user_features", mode="overwrite")
+features = fs.read_table("churn_user_features")
 display(features)
 
 # COMMAND ----------
@@ -200,6 +227,7 @@ df = features.toPandas()
 
 # Split to train and test set
 from sklearn.model_selection import train_test_split
+
 train_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 
 # COMMAND ----------
@@ -211,7 +239,22 @@ train_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 
 # Select the columns
 from databricks.automl_runtime.sklearn.column_selector import ColumnSelector
-supported_cols = ["event_count", "gender", "total_amount", "country", "order_count", "channel", "total_item", "days_since_last_activity", "days_last_event", "days_since_creation", "session_count", "age_group", "platform"]
+
+supported_cols = [
+    "event_count",
+    "gender",
+    "total_amount",
+    "country",
+    "order_count",
+    "channel",
+    "total_item",
+    "days_since_last_activity",
+    "days_last_event",
+    "days_since_creation",
+    "session_count",
+    "age_group",
+    "platform",
+]
 col_selector = ColumnSelector(supported_cols)
 
 # COMMAND ----------
@@ -223,15 +266,54 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, StandardScaler
 
 num_imputers = []
-num_imputers.append(("impute_mean", SimpleImputer(), ["age_group", "days_last_event", "days_since_creation", "days_since_last_activity", "event_count", "gender", "order_count", "session_count", "total_amount", "total_item"]))
+num_imputers.append(
+    (
+        "impute_mean",
+        SimpleImputer(),
+        [
+            "age_group",
+            "days_last_event",
+            "days_since_creation",
+            "days_since_last_activity",
+            "event_count",
+            "gender",
+            "order_count",
+            "session_count",
+            "total_amount",
+            "total_item",
+        ],
+    )
+)
 
-numerical_pipeline = Pipeline(steps=[
-    ("converter", FunctionTransformer(lambda df: df.apply(pd.to_numeric, errors="coerce"))),
-    ("imputers", ColumnTransformer(num_imputers)),
-    ("standardizer", StandardScaler()),
-])
+numerical_pipeline = Pipeline(
+    steps=[
+        (
+            "converter",
+            FunctionTransformer(lambda df: df.apply(pd.to_numeric, errors="coerce")),
+        ),
+        ("imputers", ColumnTransformer(num_imputers)),
+        ("standardizer", StandardScaler()),
+    ]
+)
 
-numerical_transformers = [("numerical", numerical_pipeline, ["event_count", "gender", "total_amount", "order_count", "total_item", "days_since_last_activity", "days_last_event", "days_since_creation", "session_count", "age_group"])]
+numerical_transformers = [
+    (
+        "numerical",
+        numerical_pipeline,
+        [
+            "event_count",
+            "gender",
+            "total_amount",
+            "order_count",
+            "total_item",
+            "days_since_last_activity",
+            "days_last_event",
+            "days_since_creation",
+            "session_count",
+            "age_group",
+        ],
+    )
+]
 
 # COMMAND ----------
 
@@ -242,18 +324,38 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 
 one_hot_imputers = []
-one_hot_pipeline = Pipeline(steps=[
-    ("imputers", ColumnTransformer(one_hot_imputers, remainder="passthrough")),
-    ("one_hot_encoder", OneHotEncoder(handle_unknown="indicator")),
-])
-categorical_one_hot_transformers = [("onehot", one_hot_pipeline, ["age_group", "channel", "country", "event_count", "gender", "order_count", "platform", "session_count"])]
+one_hot_pipeline = Pipeline(
+    steps=[
+        ("imputers", ColumnTransformer(one_hot_imputers, remainder="passthrough")),
+        ("one_hot_encoder", OneHotEncoder(handle_unknown="indicator")),
+    ]
+)
+categorical_one_hot_transformers = [
+    (
+        "onehot",
+        one_hot_pipeline,
+        [
+            "age_group",
+            "channel",
+            "country",
+            "event_count",
+            "gender",
+            "order_count",
+            "platform",
+            "session_count",
+        ],
+    )
+]
 
 # COMMAND ----------
 
 # Final transformation of the columns
 from sklearn.compose import ColumnTransformer
+
 transformers = numerical_transformers + categorical_one_hot_transformers
-preprocessor = ColumnTransformer(transformers, remainder="passthrough", sparse_threshold=1)
+preprocessor = ColumnTransformer(
+    transformers, remainder="passthrough", sparse_threshold=1
+)
 
 # COMMAND ----------
 
@@ -285,35 +387,36 @@ from sklearn.pipeline import Pipeline
 
 # Start a run
 with mlflow.start_run(run_name="simple-RF-run") as run:
+    classifier = RandomForestClassifier()
+    model = Pipeline(
+        [
+            ("column_selector", col_selector),
+            ("preprocessor", preprocessor),
+            ("classifier", classifier),
+        ]
+    )
 
-  classifier = RandomForestClassifier()
-  model = Pipeline([
-      ("column_selector", col_selector),
-      ("preprocessor", preprocessor),
-      ("classifier", classifier),
-  ])
+    # Enable automatic logging of input samples, metrics, parameters, and models
+    mlflow.sklearn.autolog(log_input_examples=True, silent=True)
 
-  # Enable automatic logging of input samples, metrics, parameters, and models
-  mlflow.sklearn.autolog(
-      log_input_examples=True,
-      silent=True)
+    model.fit(X_train, y_train)
 
-  model.fit(X_train, y_train)
-
-  # Log metrics for the test set
-  mlflow_model = Model()
-  pyfunc.add_to_model(mlflow_model, loader_module="mlflow.sklearn")
-  pyfunc_model = PyFuncModel(model_meta=mlflow_model, model_impl=model)
-  X_test[target_col] = y_test
-  test_eval_result = mlflow.evaluate(
-      model=pyfunc_model,
-      data=X_test,
-      targets=target_col,
-      model_type="classifier",
-      evaluator_config = {"log_model_explainability": False,
-                          "metric_prefix": "test_" , "pos_label": 1 }
-  )
-
+    # Log metrics for the test set
+    mlflow_model = Model()
+    pyfunc.add_to_model(mlflow_model, loader_module="mlflow.sklearn")
+    pyfunc_model = PyFuncModel(model_meta=mlflow_model, model_impl=model)
+    X_test[target_col] = y_test
+    test_eval_result = mlflow.evaluate(
+        model=pyfunc_model,
+        data=X_test,
+        targets=target_col,
+        model_type="classifier",
+        evaluator_config={
+            "log_model_explainability": False,
+            "metric_prefix": "test_",
+            "pos_label": 1,
+        },
+    )
 
 # COMMAND ----------
 
@@ -348,12 +451,15 @@ with mlflow.start_run(run_name="simple-RF-run") as run:
 
 # DBTITLE 1,Register the model in the model registry
 from mlflow.tracking.client import MlflowClient
+
 mlflow.set_registry_uri("databricks-uc")
 
-logged_model = 'runs:/' + run.info.run_id + '/model'
+logged_model = "runs:/" + run.info.run_id + "/model"
 
 print("Registeting the model under the name '" + modelName + "'")
-result=mlflow.register_model(logged_model, 'main.'+databaseForDLT+'.'+modelName, await_registration_for=0)
+result = mlflow.register_model(
+    logged_model, "main." + databaseForDLT + "." + modelName, await_registration_for=0
+)
 
 # COMMAND ----------
 
@@ -364,21 +470,26 @@ import time
 client = MlflowClient()
 model_version_details = None
 while True:
-  model_version_details = client.get_model_version(name='main.'+databaseForDLT+'.'+modelName, version=result.version)
-  if model_version_details.status == 'READY': break
-  time.sleep(5)
+    model_version_details = client.get_model_version(
+        name="main." + databaseForDLT + "." + modelName, version=result.version
+    )
+    if model_version_details.status == "READY":
+        break
+    time.sleep(5)
 
-#print(model_version_details)
+# print(model_version_details)
 
 # create "Champion" alias for version 1 of model "prod.ml_team.iris_model"
-client.set_registered_model_alias('main.'+databaseForDLT+'.'+modelName, "production", 1)
+client.set_registered_model_alias(
+    "main." + databaseForDLT + "." + modelName, "production", 1
+)
 
-#client.transition_model_version_stage(
+# client.transition_model_version_stage(
 #    name=model_version_details.name,
 #    version=model_version_details.version,
 #    stage="Production",
 #    archive_existing_versions = True
-#)
+# )
 
 # COMMAND ----------
 
