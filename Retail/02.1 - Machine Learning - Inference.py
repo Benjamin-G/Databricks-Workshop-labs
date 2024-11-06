@@ -44,7 +44,7 @@
 # COMMAND ----------
 
 spark.sql("use catalog main")
-spark.sql("use database "+databaseForDLT)
+spark.sql("use database " + databaseForDLT)
 print("Database name: " + databaseForDLT)
 print("User name: " + userName)
 
@@ -52,29 +52,59 @@ print("User name: " + userName)
 
 # DBTITLE 1,Loading the model
 import mlflow
+
+databaseForDLT = "odl_user_1503017_databrickslabs_com_retail"
 #                                      Stage/version
 #                       Model name          |              output
 #                           |               |                 |
-mlflow.set_registry_uri('databricks-uc')
-modelURL = "models:/" + 'main.'+databaseForDLT+'.'+modelName + "@production"    #        |
-print("Retrieving model " + modelURL)                #        |
+mlflow.set_registry_uri("databricks-uc")
+modelURL = (
+    "models:/" + "main." + databaseForDLT + "." + modelName + "@production"
+)  #        |
+print("Retrieving model " + modelURL)  #        |
 predict_churn_udf = mlflow.pyfunc.spark_udf(spark, modelURL, "int")
-#We can use the function in SQL
+# We can use the function in SQL
 spark.udf.register("predict_churn", predict_churn_udf)
 
 # COMMAND ----------
 
 # DBTITLE 1,Creating the final table
 model_features = predict_churn_udf.metadata.get_input_schema().input_names()
-predictions = spark.table('churn_features').withColumn('churn_prediction', predict_churn_udf(*model_features))
+predictions = spark.table("churn_features").withColumn(
+    "churn_prediction", predict_churn_udf(*model_features)
+)
 predictions.createOrReplaceTempView("v_churn_prediction")
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC create or replace table churn_prediction as select * from v_churn_prediction
+# MAGIC create
+# MAGIC or replace table churn_prediction as
+# MAGIC select
+# MAGIC   *
+# MAGIC from
+# MAGIC   v_churn_prediction
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from churn_prediction
+# MAGIC
+# MAGIC with cte (
+# MAGIC select
+# MAGIC   churn = churn_prediction as correct,
+# MAGIC   churn,
+# MAGIC   churn_prediction,
+# MAGIC   *
+# MAGIC from
+# MAGIC   churn_prediction)
+# MAGIC
+# MAGIC select 
+# MAGIC sum(case when correct then 1 else 0 end) as correct,
+# MAGIC sum(case when not correct then 1 else 0 end) as incorrect,
+# MAGIC count(*) total
+# MAGIC from cte
+# MAGIC
+
+# COMMAND ----------
+
+

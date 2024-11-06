@@ -477,7 +477,7 @@ while True:
         break
     time.sleep(5)
 
-# print(model_version_details)
+print(model_version_details)
 
 # create "Champion" alias for version 1 of model "prod.ml_team.iris_model"
 client.set_registered_model_alias(
