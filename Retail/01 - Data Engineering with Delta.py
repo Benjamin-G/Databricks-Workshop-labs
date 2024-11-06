@@ -157,7 +157,8 @@ from pyspark.sql.functions import sha1, col, initcap, to_timestamp
 (
     spark.readStream.table("churn_users_bronze")
     .withColumnRenamed("id", "user_id")
-    .withColumn("email", sha1(col("email")))
+    # Obfiscation 
+    .withColumn("email", sha1(col("email"))) 
     .withColumn(
         "creation_date", to_timestamp(col("creation_date"), "MM-dd-yyyy H:mm:ss")
     )
@@ -311,6 +312,8 @@ display(spark.table("churn_features"))
 # MAGIC %sql
 # MAGIC -- You made the DELETE by mistake ? You can easily restore the table at a given version / date:
 # MAGIC RESTORE TABLE churn_users TO VERSION AS OF 1 -- Or clone it (SHALLOW provides zero copy clone):
+# MAGIC
+# MAGIC -- Very cool
 # MAGIC -- CREATE TABLE user_gold_clone SHALLOW|DEEP CLONE user_gold VERSION AS OF 1
 
 # COMMAND ----------
